@@ -108,10 +108,7 @@ translation of GeoCoq's Coq sources.
 
 ## Credit
 
-Translation of [GeoCoq](https://github.com/GeoCoq/GeoCoq), originally
-formalized in Coq by Julien Narboux, Pierre Boutry, Guillaume Cano,
-and contributors. Refer to the upstream repository for the Coq sources
-this work is based on.
+Translation of [GeoCoq](https://github.com/GeoCoq/GeoCoq)
 
 Translation work done with assistance from Claude Code
 ([anthropic.com](https://www.anthropic.com)) using `rocq-mcp` and
