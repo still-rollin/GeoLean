@@ -8,6 +8,7 @@ Sections T1_1 through T1_3 use only `Tarski_neutral_dimensionless`;
 T1_4 lemmas additionally need point-equality decidability.
 -/
 
+import Aesop
 import GeocoqTranslate.Tarski.Axioms
 import GeocoqTranslate.Tarski.Definitions
 
@@ -21,11 +22,13 @@ open Tarski_neutral_dimensionless_with_decidable_point_equality
 section T1_1
 variable {Tpoint : Type} [Tarski_neutral_dimensionless Tpoint]
 
+@[aesop safe]
 theorem cong_reflexivity (A B : Tpoint) : Cong A B A B :=
   cong_inner_transitivity B A A B A B
     (cong_pseudo_reflexivity B A)
     (cong_pseudo_reflexivity B A)
 
+@[aesop safe forward]
 theorem cong_symmetry (A B C D : Tpoint) (h : Cong A B C D) : Cong C D A B :=
   cong_inner_transitivity A B C D A B h (cong_reflexivity A B)
 
@@ -33,33 +36,41 @@ theorem cong_transitivity (A B C D E F : Tpoint)
     (h1 : Cong A B C D) (h2 : Cong C D E F) : Cong A B E F :=
   cong_inner_transitivity C D A B E F (cong_symmetry A B C D h1) h2
 
+@[aesop safe forward]
 theorem cong_left_commutativity (A B C D : Tpoint)
     (h : Cong A B C D) : Cong B A C D :=
   cong_inner_transitivity A B B A C D (cong_pseudo_reflexivity A B) h
 
+@[aesop safe forward]
 theorem cong_right_commutativity (A B C D : Tpoint)
     (h : Cong A B C D) : Cong A B D C :=
   cong_symmetry D C A B
     (cong_left_commutativity C D A B
       (cong_symmetry A B C D h))
 
+@[aesop safe forward]
 theorem cong_3421 (A B C D : Tpoint) (h : Cong A B C D) : Cong C D B A :=
   cong_right_commutativity C D A B (cong_symmetry A B C D h)
 
+@[aesop safe forward]
 theorem cong_4312 (A B C D : Tpoint) (h : Cong A B C D) : Cong D C A B :=
   cong_left_commutativity C D A B (cong_symmetry A B C D h)
 
+@[aesop safe forward]
 theorem cong_4321 (A B C D : Tpoint) (h : Cong A B C D) : Cong D C B A :=
   cong_right_commutativity D C A B (cong_4312 A B C D h)
 
+@[aesop safe]
 theorem cong_trivial_identity (A B : Tpoint) : Cong A A B B := by
   obtain ⟨E, _, hCong⟩ := segment_construction B A B B
   have hAE : A = E := cong_identity A E B hCong
   exact hAE.symm ▸ hCong
 
+@[aesop safe forward]
 theorem cong_reverse_identity (A C D : Tpoint) (h : Cong A A C D) : C = D :=
   cong_identity C D A (cong_symmetry A A C D h)
 
+@[aesop safe forward]
 theorem cong_commutativity (A B C D : Tpoint) (h : Cong A B C D) : Cong B A D C :=
   cong_left_commutativity A B D C (cong_right_commutativity A B C D h)
 
@@ -70,24 +81,31 @@ end T1_1
 section T1_2
 variable {Tpoint : Type} [Tarski_neutral_dimensionless Tpoint]
 
+@[aesop safe forward]
 theorem not_cong_2134 (A B C D : Tpoint) (h : ¬ Cong A B C D) : ¬ Cong B A C D :=
   fun h' => h (cong_left_commutativity B A C D h')
 
+@[aesop safe forward]
 theorem not_cong_1243 (A B C D : Tpoint) (h : ¬ Cong A B C D) : ¬ Cong A B D C :=
   fun h' => h (cong_right_commutativity A B D C h')
 
+@[aesop safe forward]
 theorem not_cong_2143 (A B C D : Tpoint) (h : ¬ Cong A B C D) : ¬ Cong B A D C :=
   fun h' => h (cong_commutativity B A D C h')
 
+@[aesop safe forward]
 theorem not_cong_3412 (A B C D : Tpoint) (h : ¬ Cong A B C D) : ¬ Cong C D A B :=
   fun h' => h (cong_symmetry C D A B h')
 
+@[aesop safe forward]
 theorem not_cong_4312 (A B C D : Tpoint) (h : ¬ Cong A B C D) : ¬ Cong D C A B :=
   fun h' => h (cong_symmetry C D A B (cong_left_commutativity D C A B h'))
 
+@[aesop safe forward]
 theorem not_cong_3421 (A B C D : Tpoint) (h : ¬ Cong A B C D) : ¬ Cong C D B A :=
   fun h' => h (cong_symmetry C D A B (cong_right_commutativity C D B A h'))
 
+@[aesop safe forward]
 theorem not_cong_4321 (A B C D : Tpoint) (h : ¬ Cong A B C D) : ¬ Cong D C B A :=
   fun h' => h (cong_4321 D C B A h')
 
@@ -103,19 +121,23 @@ theorem five_segment_with_def (A B C D A' B' C' D' : Tpoint)
   obtain ⟨hBet, hBet', hABA'B', hBCB'C', hADA'D', hBDB'D'⟩ := h
   exact five_segment A A' B B' C C' D D' hABA'B' hBCB'C' hADA'D' hBDB'D' hBet hBet' hAB
 
+@[aesop safe forward]
 theorem cong_diff (A B C D : Tpoint) (hAB : A ≠ B) (h : Cong A B C D) : C ≠ D := by
   intro hCD
   exact hAB (cong_identity A B C (hCD.symm ▸ h))
 
+@[aesop safe forward]
 theorem cong_diff_2 (A B C D : Tpoint) (hBA : B ≠ A) (h : Cong A B C D) : C ≠ D := by
   intro hCD
   exact hBA (cong_identity A B C (hCD.symm ▸ h)).symm
 
+@[aesop safe forward]
 theorem cong_diff_3 (A B C D : Tpoint) (hCD : C ≠ D) (h : Cong A B C D) : A ≠ B := by
   intro hAB
   subst hAB
   exact hCD (cong_identity C D A (cong_symmetry A A C D h))
 
+@[aesop safe forward]
 theorem cong_diff_4 (A B C D : Tpoint) (hDC : D ≠ C) (h : Cong A B C D) : A ≠ B := by
   intro hAB
   subst hAB

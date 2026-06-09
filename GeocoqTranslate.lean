@@ -6,6 +6,15 @@ import «GeocoqTranslate».Tarski.Definitions
 import «GeocoqTranslate».Euclidean.Axioms
 import «GeocoqTranslate».Hilbert.Axioms
 import «GeocoqTranslate».Tarski_dev.Ch02_cong
+import «GeocoqTranslate».Tarski_dev.Ch03_bet
+import «GeocoqTranslate».Tarski_dev.Ch04_col
+import «GeocoqTranslate».Tarski_dev.Ch04_cong_bet
+import «GeocoqTranslate».Tarski_dev.Ch05_bet_le
+import «GeocoqTranslate».Tarski_dev.Ch06_out_lines
+import «GeocoqTranslate».Tarski_dev.Ch07_midpoint
+import «GeocoqTranslate».Tarski_dev.Ch08_orthogonality
+import «GeocoqTranslate».Tarski_dev.Ch09_plane
+import «GeocoqTranslate».Tarski_dev.Ch10_line_reflexivity
 import «GeocoqTranslate».Elements.OriginalProofs.Lemmas.lemma_congruencesymmetric
 import «GeocoqTranslate».Elements.OriginalProofs.Lemmas.lemma_congruencetransitive
 import «GeocoqTranslate».Elements.OriginalProofs.Lemmas.lemma_congruenceflip
@@ -18,4 +27,8 @@ import «GeocoqTranslate».Elements.OriginalProofs.Lemmas.lemma_3_7a
 import «GeocoqTranslate».Elements.OriginalProofs.Lemmas.lemma_3_7b
 import «GeocoqTranslate».Elements.OriginalProofs.euclidean_defs
 import «GeocoqTranslate».Elements.OriginalProofs.Lemmas.lemma_partnotequalwhole
+import «GeocoqTranslate».Elements.OriginalProofs.Lemmas.lemma_doublereverse
+import «GeocoqTranslate».Elements.OriginalProofs.Lemmas.lemma_NCdistinct
+import «GeocoqTranslate».Elements.OriginalProofs.Lemmas.lemma_differenceofparts
 import «GeocoqTranslate».Elements.OriginalProofs.proposition_01
+import «GeocoqTranslate».Elements.OriginalProofs.proposition_02
