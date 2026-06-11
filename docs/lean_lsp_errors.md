@@ -458,8 +458,12 @@ line longer but always available.
 | 11 | `lean_build` | Default-valued class field is opaque outside the class; also overridable (Julien's review) | Revert §10 — go back to two-class split with namespaced `def`s |
 | 12 | `lean_build` | Plain `def` is semi-reducible; anonymous constructor doesn't auto-unfold the body | `show <unfolded body>` before `exact ⟨…⟩`, or mark `@[reducible]` |
 | 13 | `lean_build` | `by_contra` tactic not in scope (project doesn't transitively import Mathlib.Tactic) | Use `apply Classical.byContradiction; intro h` instead |
+| 14 | `lean_diagnostic_messages` (×4 sites) | Misread `lemma_congruencesymmetric`'s positional args as input-positions when they name output-positions | Match positional args to the conclusion shape, not the hypothesis |
+| 15 | `lean_diagnostic_messages` | `obtain ⟨a,b,c⟩` bindings depended on Lean's conjunction order, which differed from Coq convention | Read the `def` body in the Lean port before destructuring |
+| 16 | `lean_diagnostic_messages` | `subst h` removed the wrong variable for `h : C = A` (later-introduced var goes) | Use `rw [h] at <hyp>` for two-var equations |
+| 17 | `lean_diagnostic_messages` | `@[aesop norm unfold]` syntax not recognized by current Aesop | Use `@[simp]` — aesop runs simp during normalization |
 
-Four categories of root cause:
+Six categories of root cause:
 - **One issue (1)** — Lean idiom mismatch, fix by knowing Lean.
 - **Three issues (2, 4, 5)** — Typeclass synthesis through `extends`
   with dependent argument types. The `@Parent.method Type _ …`
@@ -475,6 +479,14 @@ Four categories of root cause:
   General lesson: every Coq `apply Lemma a b` or `auto with X` step
   may hide additional explicit args or permutation lemmas that have
   to be supplied by hand in Lean.
+- **Three issues (14, 15, 16)** — Translator-memory errors on positional
+  args, conjunction-destructure order, and `subst` direction. Each is
+  one-shot recoverable from the LSP error message, but the recurrence
+  across multiple sites (especially §14 across four files) is what made
+  the `geolean_oracle` MCP investment worthwhile — it pre-resolves arg
+  orders from Coq's `Show Proof.` so the guessing loop disappears.
+- **One issue (17)** — Aesop attribute-syntax version drift. Fall back
+  to `@[simp]` when the bespoke syntax doesn't parse.
 
 ---
 
@@ -624,3 +636,187 @@ site, which is useful when reading the proof.
 `unfold <name>` before the anonymous constructor. Coq's `Definition`s
 are fully transparent (reducible-by-default); Lean's plain `def`s are
 not. The two-line cost is small but it adds up across many proofs.
+
+---
+
+## 14. Argument-order confusion on `lemma_congruencesymmetric` (recurring)
+
+**Where:**
+- [lemma_doublereverse.lean](../lean/geocoq_translate/GeocoqTranslate/Elements/OriginalProofs/Lemmas/lemma_doublereverse.lean) line 25,
+- [lemma_differenceofparts.lean](../lean/geocoq_translate/GeocoqTranslate/Elements/OriginalProofs/Lemmas/lemma_differenceofparts.lean) lines 38, 62,
+- [proposition_02.lean](../lean/geocoq_translate/GeocoqTranslate/Elements/OriginalProofs/proposition_02.lean) lines 60, 61, 73, 74.
+
+**Tool that returned the error:** `lean_diagnostic_messages` / `lean_build`,
+`success: false`. Same shape across all sites — `Application type mismatch`
+on the hypothesis argument.
+
+**Concrete instance (from `lemma_doublereverse`):**
+```
+error: lemma_doublereverse.lean:25:66:
+Application type mismatch: The argument
+  h_BADC
+has type
+  Cong B A D C
+but is expected to have type
+  Cong C B D A
+in the application
+  lemma_congruencesymmetric D C B A h_BADC
+```
+
+**Root cause:** the lemma's actual signature is
+```lean
+lemma_congruencesymmetric (A B C D : Point) (h : Cong B C A D) : Cong A D B C
+```
+The four `Point` positional args name the *output* (`Cong A D B C`), not
+the input. To produce `Cong D C B A` from `Cong B A D C`, the right call
+is `lemma_congruencesymmetric D B A C h_BADC` — match the four positional
+args **to the conclusion**, then the hypothesis is consumed in the order
+`Cong B C A D` = `Cong B A D C`. Easy to misread the signature as
+"input first" — the same mistake was made at four different sites this
+session before the pattern clicked.
+
+**Working fix:** read the signature as *target-first*. The `(A B C D)`
+positional args correspond to the conclusion `Cong A D B C`, not to the
+input. Same pattern applies to `lemma_congruenceflip`'s triple
+projection — `(lemma_congruenceflip A B C D h).2.1` returns
+`Cong B A C D`, so the four positional args are again target-positions.
+
+**Lesson:** for any GeoCoq-style permutation lemma, the positional
+arguments name **output positions**. Hovering on the lemma symbol in
+VS Code shows the conclusion type immediately, which is the right
+mental anchor. Don't try to remember the signature; look at it. (This
+recurring failure is what motivated building the `geolean_oracle` MCP
+server — Coq's `Show Proof.` records the resolved positional args
+directly, eliminating the guess.)
+
+---
+
+## 15. `obtain ⟨a, b, c⟩` on `Cong_3` unfolds in non-obvious order
+
+**Where:** [Tarski_dev/Ch04_col.lean](../lean/geocoq_translate/GeocoqTranslate/Tarski_dev/Ch04_col.lean)
+line 110 (inside `l4_13`), destructuring the `Cong_3 A B C A' B' C'`
+hypothesis.
+
+**Tool that returned the error:** `lean_diagnostic_messages`,
+`success: false`, after the first draft of the proof.
+
+**Error message:**
+```
+Application type mismatch: The argument
+  hBC
+has type
+  Cong A C A' C'
+but is expected to have type
+  Cong B C B' C'
+in the application
+  And.intro hBC
+```
+
+(Plus cascading mismatches at 5 other sites in the same `rcases` block.)
+
+**Root cause:** I assumed `Cong_3 A B C A' B' C'` was
+`Cong A B A' B' ∧ Cong B C B' C' ∧ Cong A C A' C'` and destructured as
+`⟨hAB, hBC, hAC⟩`. The actual `def` in
+[Tarski/Definitions.lean](../lean/geocoq_translate/GeocoqTranslate/Tarski/Definitions.lean)
+is `Cong A B A' B' ∧ Cong A C A' C' ∧ Cong B C B' C'`. So `obtain ⟨a, b, c⟩`
+binds `b` to the `Cong A C` component, not the `Cong B C` one. The variable
+names I picked (`hAB`, `hBC`, `hAC`) were a lie about the actual contents.
+
+**Working fix:** rename the destructure bindings to match the def's
+actual ordering — `obtain ⟨hAB, hAC, hBC⟩ := h₂` — and reorder every
+constructor-style `⟨…⟩` that builds a `Cong_3`. The proof body itself
+didn't need to change beyond the renaming.
+
+**Lesson:** before destructuring a Coq-derived `def`, jump to its
+definition and read the conjunction order *in the Lean port*. Coq
+conventions (`Cong A B → Cong B C → Cong A C` as a natural traversal)
+don't constrain the Lean translator, and minor reorderings during the
+port can flip the binding order without changing the meaning.
+
+---
+
+## 16. `subst h` for `h : C = A` removes the unexpected variable
+
+**Where:** [lemma_differenceofparts.lean](../lean/geocoq_translate/GeocoqTranslate/Elements/OriginalProofs/Lemmas/lemma_differenceofparts.lean)
+line 45, inside the `B ≠ A` case, proving `C ≠ A` by contradiction.
+
+**Tool that returned the error:** `lean_diagnostic_messages`,
+`success: false`, immediately after writing the first draft.
+
+**Error message:**
+```
+Unknown identifier `A`
+```
+at the `exact axiom_betweennessidentity A B h3` line — even though `A`
+was in scope at the start of the proof.
+
+**Root cause:** the proof draft was:
+```lean
+have hCA : C ≠ A := by
+  intro hCAeq          -- hCAeq : C = A
+  subst hCAeq
+  exact axiom_betweennessidentity A B h3
+```
+`subst hCAeq` for `hCAeq : C = A` substitutes the *most-recently-introduced*
+free variable. `A` was introduced earlier in the theorem signature
+(as part of `(A B C a b c : Point)`), and `C` was introduced later, so
+Lean substitutes `A := C` and removes `A` from scope. Goal becomes
+`Bet C B C → False` and `A` is no longer an identifier in context.
+
+**Working fix:** rewrite at the hypothesis instead of `subst`-ing:
+```lean
+have hCA : C ≠ A := by
+  intro hCAeq
+  rw [hCAeq] at h3
+  exact axiom_betweennessidentity A B h3
+```
+`rw` is directional and only touches `h3` — `A` stays in scope.
+
+**Lesson:** when an equation has variables on both sides, `subst` may
+go either direction depending on introduction order; `rw [h] at <hyp>`
+is unambiguous. Use `rw` when you only need to rewrite a single
+hypothesis, especially if the equality involves two locally-bound
+variables.
+
+---
+
+## 17. `@[aesop norm unfold]` attribute syntax rejected
+
+**Where:** [Tarski/Definitions.lean](../lean/geocoq_translate/GeocoqTranslate/Tarski/Definitions.lean)
+lines 29 and 34, attempting to mark `Cong_3` and `Col` for aesop's
+normalization step.
+
+**Tool that returned the error:** `lean_diagnostic_messages`,
+`success: false`, on save.
+
+**Error message:**
+```
+unexpected identifier; expected ']'
+```
+at column 13 of `@[aesop norm unfold]`.
+
+**Root cause:** the bare `@[aesop norm unfold]` form is not accepted
+by the Aesop version pinned in our Mathlib. Without checking the exact
+supported spelling (which would have required digging into Aesop's
+attribute parser), the simplest workaround is to use `@[simp]` instead
+— aesop's normalization step runs `simp`, so any rule tagged `@[simp]`
+is picked up automatically.
+
+**Working fix:** use `@[simp]`:
+```lean
+@[simp]
+def Cong_3 (A B C A' B' C' : Tpoint) : Prop :=
+  Cong A B A' B' ∧ Cong A C A' C' ∧ Cong B C B' C'
+
+@[simp]
+def Col (A B C : Tpoint) : Prop :=
+  Bet A B C ∨ Bet B C A ∨ Bet C A B
+```
+Side-effect verified by `lean_build`: the project rebuilds 2974 jobs
+cleanly with the `@[simp]` tags, and aesop now closes 2 of 3 cases of
+`l4_13` unaided (where before the tagging it closed 0).
+
+**Lesson:** if a specific aesop attribute syntax doesn't parse, fall
+back to `@[simp]`. Aesop's normalizer runs `simp`, so `@[simp]` gives
+most of the same effect for `def`-wrapped predicates without fighting
+the attribute parser.
