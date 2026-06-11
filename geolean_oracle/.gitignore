@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.vo
+*.vok
+*.vos
+*.glob
+.*.aux
+outputs/
+proof.txt
+extract_manual.py
+serapi_playground.py

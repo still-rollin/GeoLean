@@ -26,10 +26,12 @@ def IFSC (A B C D A' B' C' D' : Tpoint) : Prop :=
   Cong A D A' D' ∧ Cong C D C' D'
 
 /-- Definition 4.4: triangle congruence. -/
+@[simp]
 def Cong_3 (A B C A' B' C' : Tpoint) : Prop :=
   Cong A B A' B' ∧ Cong A C A' C' ∧ Cong B C B' C'
 
 /-- Definition 4.10: collinearity. -/
+@[simp]
 def Col (A B C : Tpoint) : Prop :=
   Bet A B C ∨ Bet B C A ∨ Bet C A B
 

@@ -6,12 +6,13 @@ Statement-only translation (Phase 0). All proofs are `sorry`.
 Permutations and trivial cases of `Col` / `¬ Col`, plus the four core
 collinearity lemmas (l4_13 through l4_19) used heavily downstream.
 -/
-
+import Mathlib.Tactic
 import Mathlib.Tactic.Tauto
 import Aesop
 import GeocoqTranslate.Tarski.Axioms
 import GeocoqTranslate.Tarski.Definitions
 import GeocoqTranslate.Tarski_dev.Ch03_bet
+import GeocoqTranslate.Tarski_dev.Ch04_cong_bet
 
 namespace GeocoqTranslate.Tarski
 
@@ -103,7 +104,19 @@ variable {Tpoint : Type}
     [Tarski_neutral_dimensionless_with_decidable_point_equality Tpoint]
 
 theorem l4_13 (A B C A' B' C' : Tpoint)
-    (h₁ : Col A B C) (h₂ : Cong_3 A B C A' B' C') : Col A' B' C' := sorry
+    (h₁ : Col A B C)
+    (h₂ : Cong_3 A B C A' B' C') :
+    Col A' B' C' := by
+  obtain ⟨hAB, hAC, hBC⟩ := h₂
+  rcases h₁ with hABC | hBCA | hCAB
+  · exact .inl (l4_6 A B C A' B' C' hABC ⟨hAB, hAC, hBC⟩)
+  · refine .inr (.inl ?_)
+    exact l4_6 B C A B' C' A' hBCA
+      ⟨hBC, cong_commutativity _ _ _ _ hAB, cong_commutativity _ _ _ _ hAC⟩
+  · refine .inr (.inr ?_)
+    exact l4_6 C A B C' A' B' hCAB
+      ⟨cong_commutativity _ _ _ _ hAC, cong_commutativity _ _ _ _ hBC, hAB⟩
+
 
 theorem l4_14 (A B C A' B' : Tpoint)
     (h₁ : Col A B C) (h₂ : Cong A B A' B') :

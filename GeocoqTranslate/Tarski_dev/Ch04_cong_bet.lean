@@ -34,7 +34,7 @@ theorem l4_3_1 (A B C A' B' C' : Tpoint)
 theorem l4_5 (A B C A' C' : Tpoint)
     (hBet : Bet A B C) (hCong : Cong A C A' C') :
     ∃ B', Bet A' B' C' ∧ Cong_3 A B C A' B' C' := sorry
-
+@[aesop safe]
 theorem l4_6 (A B C A' B' C' : Tpoint)
     (hBet : Bet A B C) (hCong : Cong_3 A B C A' B' C') : Bet A' B' C' := sorry
 

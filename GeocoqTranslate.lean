@@ -25,6 +25,8 @@ import «GeocoqTranslate».Elements.OriginalProofs.Lemmas.lemma_betweennotequal
 import «GeocoqTranslate».Elements.OriginalProofs.Lemmas.lemma_extensionunique
 import «GeocoqTranslate».Elements.OriginalProofs.Lemmas.lemma_3_7a
 import «GeocoqTranslate».Elements.OriginalProofs.Lemmas.lemma_3_7b
+import «GeocoqTranslate».Elements.OriginalProofs.Lemmas.lemma_3_5b
+import «GeocoqTranslate».Elements.OriginalProofs.Lemmas.lemma_3_6b
 import «GeocoqTranslate».Elements.OriginalProofs.euclidean_defs
 import «GeocoqTranslate».Elements.OriginalProofs.Lemmas.lemma_partnotequalwhole
 import «GeocoqTranslate».Elements.OriginalProofs.Lemmas.lemma_doublereverse
